@@ -5,8 +5,6 @@
 
 #import "CDBalanceFormatter.h"
 
-static BOOL debug = NO;
-
 @implementation CDBalanceFormatter
 {
     NSScanner *_scanner;
@@ -18,6 +16,9 @@ static BOOL debug = NO;
 - (id)initWithString:(NSString *)str;
 {
     if ((self = [super init])) {
+        if (!str){
+            VerboseLog(@"%s NSScanner initWithString: %@", _cmds, str);
+        }
         _scanner = [[NSScanner alloc] initWithString:str];
         _openCloseSet = [NSCharacterSet characterSetWithCharactersInString:@"{}<>()"];
         
@@ -40,16 +41,16 @@ static BOOL debug = NO;
         NSString *pre;
 
         if ([_scanner scanUpToCharactersFromSet:_openCloseSet intoString:&pre]) {
-            if (debug) NSLog(@"pre = '%@'", pre);
+             VerboseLog(@"pre = '%@'", pre);
             [_result appendFormat:@"%@%@\n", [NSString spacesIndentedToLevel:level], pre];
         }
-        if (debug) NSLog(@"remaining: '%@'", [[_scanner string] substringFromIndex:[_scanner scanLocation]]);
+         VerboseLog(@"remaining: '%@'", [[_scanner string] substringFromIndex:[_scanner scanLocation]]);
 
         foundOpen = foundClose = NO;
         for (NSUInteger index = 0; index < 3; index++) {
-            if (debug) NSLog(@"Checking open %lu: '%@'", index, opens[index]);
+             VerboseLog(@"Checking open %lu: '%@'", index, opens[index]);
             if ([_scanner scanString:opens[index] intoString:NULL]) {
-                if (debug) NSLog(@"Start %@", opens[index]);
+                 VerboseLog(@"Start %@", opens[index]);
                 [_result appendSpacesIndentedToLevel:level];
                 [_result appendString:opens[index]];
                 [_result appendString:@"\n"];
@@ -63,12 +64,12 @@ static BOOL debug = NO;
                 break;
             }
 
-            if (debug) NSLog(@"Checking close %lu: '%@'", index, closes[index]);
+             VerboseLog(@"Checking close %lu: '%@'", index, closes[index]);
             if ([_scanner scanString:closes[index] intoString:NULL]) {
                 if ([open isEqualToString:opens[index]]) {
-                    if (debug) NSLog(@"End %@", closes[index]);
+                     VerboseLog(@"End %@", closes[index]);
                 } else {
-                    NSLog(@"ERROR: Unmatched end %@", closes[index]);
+                    VerboseLog(@"ERROR: Unmatched end %@", closes[index]);
                 }
                 foundClose = YES;
                 break;
@@ -76,7 +77,7 @@ static BOOL debug = NO;
         }
 
         if (foundOpen == NO && foundClose == NO) {
-            if (debug) NSLog(@"Unknown @ %lu: %@", [_scanner scanLocation], [[_scanner string] substringFromIndex:[_scanner scanLocation]]);
+             VerboseLog(@"Unknown @ %lu: %@", [_scanner scanLocation], [[_scanner string] substringFromIndex:[_scanner scanLocation]]);
             break;
         }
 
@@ -89,7 +90,7 @@ static BOOL debug = NO;
 {
     [self parse:nil index:0 level:0];
 
-    if (debug) NSLog(@"result:\n%@", _result);
+     VerboseLog(@"result:\n%@", _result);
 
     return [NSString stringWithString:_result];
 }

@@ -4,12 +4,16 @@
 //  Copyright (C) 1997-2019 Steve Nygard.
 
 #import "CDLCSegment.h"
-
 #import "CDMachOFile.h"
 #import "CDSection.h"
-
+#include <mach-o/arch.h>
 #include <CommonCrypto/CommonCrypto.h>
 #include "blowfish.h"
+#include <TargetConditionals.h>
+#if !TARGET_OS_OSX
+#include <mach/arm/vm_param.h>
+#endif
+
 
 // Decrypt PAGE_SIZE (4096) bytes
 static void BF_Decrypt_Block(BLOWFISH_CTX *ctx, const uint8_t *ptr, uint8_t *dest)
@@ -72,10 +76,22 @@ NSString *CDSegmentEncryptionTypeName(CDSegmentEncryptionType type)
         _segmentCommand.nsects   = [cursor readInt32];
         _segmentCommand.flags    = [cursor readInt32];
         
+        if (_segmentCommand.fileoff != _segmentCommand.vmaddr) {
+            VerboseLog(@"file offset and vmaddr aren't equal!");
+            if (_segmentCommand.vmaddr > _segmentCommand.filesize) {
+                VerboseLog(@"vm addr is greater than filesize! this will not work, try setting vmaddr to fileoff");
+                //_segmentCommand.vmaddr = _segmentCommand.fileoff;
+            }
+        }
+        
         NSMutableArray *sections = [[NSMutableArray alloc] init];
         for (NSUInteger index = 0; index < _segmentCommand.nsects; index++) {
             CDSection *section = [[CDSection alloc] initWithDataCursor:cursor segment:self];
-            [sections addObject:section];
+            if (section){
+                [sections addObject:section];
+            } else {
+                //NSLog(@"section at index: %lu of %lu was nil", index, _segmentCommand.nsects);
+            }
         }
         _sections = [sections copy];
     }
@@ -120,6 +136,10 @@ NSString *CDSegmentEncryptionTypeName(CDSegmentEncryptionType type)
     return _segmentCommand.filesize;
 }
 
+- (NSUInteger)baselineAdjustment {
+    return _segmentCommand.vmaddr - _segmentCommand.fileoff;
+}
+
 - (vm_prot_t)initprot;
 {
     return _segmentCommand.initprot;
@@ -137,7 +157,7 @@ NSString *CDSegmentEncryptionTypeName(CDSegmentEncryptionType type)
 
 - (CDSegmentEncryptionType)encryptionType;
 {
-    //NSLog(@"%s, isProtected? %u, filesize: %lu, fileoff: %lu", __cmd, [self isProtected], [self filesize], [self fileoff]);
+    //DLog(@"%s, isProtected? %u, filesize: %lu, fileoff: %lu", _cmds, [self isProtected], [self filesize], [self fileoff]);
     if (self.isProtected) {
         if (self.filesize <= 3 * PAGE_SIZE) {
             // First three pages aren't encrypted, so we can't tell.  Let's pretent it's something we can decrypt.
@@ -146,7 +166,7 @@ NSString *CDSegmentEncryptionTypeName(CDSegmentEncryptionType type)
             const void *src = (uint8_t *)[self.machOFile.data bytes] + self.fileoff + 3 * PAGE_SIZE;
 
             uint32_t magic = OSReadLittleInt32(src, 0);
-            //NSLog(@"%s, magic= 0x%08x", __cmd, magic);
+            //DLog(@"%s, magic= 0x%08x", _cmds, magic);
             switch (magic) {
                 case CDSegmentProtectedMagic_None:     return CDSegmentEncryptionType_None;
                 case CDSegmentProtectedMagic_AES:      return CDSegmentEncryptionType_AES;
@@ -186,7 +206,9 @@ NSString *CDSegmentEncryptionTypeName(CDSegmentEncryptionType type)
 
 - (BOOL)containsAddress:(NSUInteger)address;
 {
-    return (address >= _segmentCommand.vmaddr) && (address < _segmentCommand.vmaddr + _segmentCommand.vmsize);
+    BOOL contains = (address >= _segmentCommand.vmaddr) && (address < _segmentCommand.vmaddr + _segmentCommand.vmsize);
+    //DLog(@"%d containsAddress: %lu >= %llu && %lu < (%llu + %llu)", contains, address, _segmentCommand.vmaddr, address, _segmentCommand.vmaddr, _segmentCommand.vmsize);
+    return contains;
 }
 
 - (CDSection *)sectionContainingAddress:(NSUInteger)address;
@@ -211,7 +233,10 @@ NSString *CDSegmentEncryptionTypeName(CDSegmentEncryptionType type)
 
 - (NSUInteger)fileOffsetForAddress:(NSUInteger)address;
 {
-    return [[self sectionContainingAddress:address] fileOffsetForAddress:address];
+    VLOG_CMD;
+    CDSection *section = [self sectionContainingAddress:address];
+    VerboseLog(@"section: %@ address: 0x%08lx", section, address);
+    return [section fileOffsetForAddress:address];
 }
 
 - (NSUInteger)segmentOffsetForAddress:(NSUInteger)address;
@@ -253,7 +278,7 @@ NSString *CDSegmentEncryptionTypeName(CDSegmentEncryptionType type)
         return nil;
 
     if (_decryptedData == nil) {
-        //NSLog(@"filesize: %08x, pagesize: %04x", [self filesize], PAGE_SIZE);
+        //DLog(@"filesize: %08x, pagesize: %04x", [self filesize], PAGE_SIZE);
         NSParameterAssert((self.filesize % PAGE_SIZE) == 0);
         _decryptedData = [[NSMutableData alloc] initWithLength:self.filesize];
 
@@ -346,7 +371,7 @@ NSString *CDSegmentEncryptionTypeName(CDSegmentEncryptionType type)
                 CCCryptorRelease(cryptor1);
                 CCCryptorRelease(cryptor2);
             } else {
-                NSLog(@"Unknown encryption type: 0x%08x", magic);
+                DLog(@"Unknown encryption type: 0x%08x", magic);
                 exit(99);
             }
         }

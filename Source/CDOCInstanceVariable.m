@@ -60,7 +60,7 @@
         NSError *error;
         _type = [parser parseType:&error];
         if (_type == nil) {
-            NSLog(@"Warning: Parsing instance variable type failed, %@", self.name);
+            DLog(@"Warning: Parsing instance variable type failed, %@", self.name);
             _parseError = error;
         } else {
             self.hasParsedType = YES;

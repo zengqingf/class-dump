@@ -11,7 +11,7 @@
 
 - (id)initWithClassDump:(CDClassDump *)classDump;
 
-@property (weak) id <CDTypeControllerDelegate> delegate;
+@property id <CDTypeControllerDelegate> delegate;
 
 @property (readonly) CDTypeFormatter *ivarTypeFormatter;
 @property (readonly) CDTypeFormatter *methodTypeFormatter;

@@ -34,7 +34,7 @@
         struct fat_header header;
         header.magic = [cursor readBigInt32];
         
-        //NSLog(@"(testing fat) magic: 0x%x", header.magic);
+        //DLog(@"(testing fat) magic: 0x%x", header.magic);
         if (header.magic != FAT_MAGIC) {
             return nil;
         }
@@ -42,7 +42,7 @@
         _arches = [[NSMutableArray alloc] init];
         
         header.nfat_arch = [cursor readBigInt32];
-        //NSLog(@"nfat_arch: %u", header.nfat_arch);
+        //DLog(@"nfat_arch: %u", header.nfat_arch);
         for (NSUInteger index = 0; index < header.nfat_arch; index++) {
             CDFatArch *arch = [[CDFatArch alloc] initWithDataCursor:cursor];
             arch.fatFile = self;

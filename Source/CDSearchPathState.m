@@ -39,7 +39,7 @@
     if ([self.searchPathStack count] > 0) {
         [self.searchPathStack removeLastObject];
     } else {
-        NSLog(@"Warning: Unbalanced popSearchPaths");
+        DLog(@"Warning: Unbalanced popSearchPaths");
     }
 }
 

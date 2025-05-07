@@ -30,14 +30,15 @@
 #import "CDLCUnknown.h"
 #import "CDLCVersionMinimum.h"
 #import "CDMachOFile.h"
-
+#import "CDLCExportTRIEData.h"
 #import "CDLCMain.h"
 #import "CDLCDataInCode.h"
 #import "CDLCSourceVersion.h"
+#import "CDLCChainedFixups.h"
 
 @implementation CDLoadCommand
 {
-    __weak CDMachOFile *_machOFile;
+    CDMachOFile *_machOFile;
     NSUInteger _commandOffset;
 }
 
@@ -96,6 +97,8 @@
         case LC_DYLIB_CODE_SIGN_DRS:   targetClass = [CDLCLinkeditData class]; break; // Designated Requirements
 
         case LC_BUILD_VERSION:         targetClass = [CDLCBuildVersion class]; break;
+        case LC_DYLD_EXPORTS_TRIE:     targetClass = [CDLCExportTRIEData class]; break;
+        case LC_DYLD_CHAINED_FIXUPS:   targetClass = [CDLCChainedFixups class]; break;
 
         case LC_LINKER_OPTION:
         case LC_LINKER_OPTIMIZATION_HINT:
@@ -104,10 +107,10 @@
         case LC_NOTE:
 
         default:
-            NSLog(@"Unknown load command: 0x%08x", val);
+            DLog(@"Unknown load command: 0x%08x", val);
     };
 
-    //NSLog(@"targetClass: %@", NSStringFromClass(targetClass));
+    //DLog(@"targetClass: %@", NSStringFromClass(targetClass));
 
     return [[targetClass alloc] initWithDataCursor:cursor];
 }
@@ -208,6 +211,8 @@
         case LC_VERSION_MIN_WATCHOS:      return @"LC_VERSION_MIN_WATCHOS";
         case LC_NOTE:                     return @"LC_NOTE";
         case LC_BUILD_VERSION:            return @"LC_BUILD_VERSION";
+        case LC_DYLD_EXPORTS_TRIE:        return @"LC_DYLD_EXPORTS_TRIE";
+        case LC_DYLD_CHAINED_FIXUPS:      return @"LC_DYLD_CHAINED_FIXUPS";
 
         default:
             break;
@@ -225,8 +230,8 @@
     [resultString appendFormat:@" cmdsize %u\n", [self cmdsize]];
 }
 
-- (void)machOFileDidReadLoadCommands:(CDMachOFile *)machOFile;
-{
+- (void)machOFileDidReadLoadCommands:(CDMachOFile *)machOFile {
+    //VerboseLog(@"hexdump -Cv -s %u -n %u", _dyldInfoCommand.export_off, _dyldInfoCommand.export_size);
 }
 
 @end

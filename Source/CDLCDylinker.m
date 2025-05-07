@@ -20,10 +20,14 @@
         _dylinkerCommand.name.offset = [cursor readInt32];
         
         NSUInteger length = _dylinkerCommand.cmdsize - sizeof(_dylinkerCommand);
-        //NSLog(@"expected length: %u", length);
-        
-        _name = [cursor readStringOfLength:length encoding:NSASCIIStringEncoding];
-        //NSLog(@"name: %@", name);
+        //DLog(@"expected length: %u", length);
+        @try {
+            _name = [cursor readStringOfLength:length encoding:NSASCIIStringEncoding];
+        } @catch (NSException *exception) {
+            CAUGHT_EXCEPTION_LOG;
+            _name = nil;
+        }
+        //DLog(@"name: %@", name);
     }
 
     return self;

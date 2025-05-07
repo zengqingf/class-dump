@@ -70,7 +70,7 @@
         CDTypeParser *parser = [[CDTypeParser alloc] initWithString:self.typeString];
         _parsedMethodTypes = [parser parseMethodType:&error];
         if (_parsedMethodTypes == nil)
-            NSLog(@"Warning: Parsing method types failed, %@", self.name);
+            DLog(@"Warning: Parsing method types failed, %@", self.name);
         _hasParsedType = YES;
     }
 

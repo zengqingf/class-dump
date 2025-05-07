@@ -82,7 +82,7 @@
             node.color = CDNodeColor_Gray;
             [node topologicallySortNodes:nodesByIdentifier intoArray:sortedArray];
         } else if (node.color == CDNodeColor_Gray) {
-            NSLog(@"Warning: Possible circular reference? %@ -> %@", self.identifier, node.identifier);
+            DLog(@"Warning: Possible circular reference? %@ -> %@", self.identifier, node.identifier);
         }
     }
 

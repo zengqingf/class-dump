@@ -15,7 +15,7 @@
 NSString *const ObjCClassSymbolPrefix = @"_OBJC_CLASS_$_";
 
 @interface CDSymbol ()
-@property (weak, readonly) CDMachOFile *machOFile;
+@property (readonly) CDMachOFile *machOFile;
 @end
 
 #pragma mark -
@@ -25,7 +25,7 @@ NSString *const ObjCClassSymbolPrefix = @"_OBJC_CLASS_$_";
     struct nlist_64 _nlist;
     BOOL _is32Bit;
     NSString *_name;
-    __weak CDMachOFile *_machOFile;
+    CDMachOFile *_machOFile;
 }
 
 - (id)initWithName:(NSString *)name machOFile:(CDMachOFile *)machOFile nlist32:(struct nlist)nlist32;

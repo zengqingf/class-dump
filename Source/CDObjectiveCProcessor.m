@@ -18,6 +18,8 @@
 #import "CDSection.h"
 #import "CDProtocolUniquer.h"
 
+#import "NSArray-CDExtensions.h"
+
 // Note: sizeof(long long) == 8 on both 32-bit and 64-bit.  sizeof(uint64_t) == 8.  So use [NSNumber numberWithUnsignedLongLong:].
 
 @implementation CDObjectiveCProcessor
@@ -30,11 +32,13 @@
     NSMutableArray *_categories;
     
     CDProtocolUniquer *_protocolUniquer;
+    BOOL stopEarly; //h4x to stop after 'preprocessing'
 }
 
 - (id)initWithMachOFile:(CDMachOFile *)machOFile;
 {
     if ((self = [super init])) {
+        stopEarly = false;
         _machOFile = machOFile;
         _classes = [[NSMutableArray alloc] init];
         _classesByAddress = [[NSMutableDictionary alloc] init];
@@ -79,7 +83,7 @@
         
         [cursor readInt32];
         uint32_t v2 = [cursor readInt32];
-        //NSLog(@"%s: %08x %08x", __cmd, v1, v2);
+        //DLog(@"%s: %08x %08x", _cmds, v1, v2);
         // v2 == 0 -> Objective-C Garbage Collection: Unsupported
         // v2 == 2 -> Supported
         // v2 == 6 -> Required
@@ -131,10 +135,35 @@
 
 #pragma mark - Processing
 
-- (void)process;
-{
+- (void)processStoppingEarly:(BOOL)stopEarly {
+    ILOG_CMD;
     if (self.machOFile.isEncrypted == NO && self.machOFile.canDecryptAllSegments) {
         [self.machOFile.symbolTable loadSymbols];
+        //VerboseLog(@"SymbolTable: %@", self.machOFile.symbolTable);
+        [self.machOFile.dynamicSymbolTable loadSymbols];
+        if (stopEarly){
+            InfoLog(@"end of the line!");
+            exit(0);
+        }
+        if (!_shallow) {
+            [self loadProtocols];
+            [self.protocolUniquer createUniquedProtocols];
+        }
+        // Load classes before categories, so we can get a dictionary of classes by address.
+        [self loadClasses];
+        if (!_shallow) {
+            [self loadCategories];
+        }
+    }
+}
+
+- (void)process
+{
+    ILOG_CMD;
+    /*
+    if (self.machOFile.isEncrypted == NO && self.machOFile.canDecryptAllSegments) {
+        [self.machOFile.symbolTable loadSymbols];
+        //VerboseLog(@"SymbolTable: %@", self.machOFile.symbolTable);
         [self.machOFile.dynamicSymbolTable loadSymbols];
 
         [self loadProtocols];
@@ -143,7 +172,12 @@
         // Load classes before categories, so we can get a dictionary of classes by address.
         [self loadClasses];
         [self loadCategories];
-    }
+    }*/
+    [self processStoppingEarly:false];
+}
+
+- (void)checkEntitlements {
+    
 }
 
 - (void)loadProtocols;

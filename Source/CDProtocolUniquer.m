@@ -51,6 +51,10 @@
     
     for (NSNumber *key in [[_protocolsByAddress allKeys] sortedArrayUsingSelector:@selector(compare:)]) {
         CDOCProtocol *p1 = _protocolsByAddress[key];
+        VerboseLog(@"p1 name: %@", p1);
+        if (p1.name == nil) {
+            continue;
+        }
         CDOCProtocol *uniqueProtocol = _uniqueProtocolsByName[p1.name];
         if (uniqueProtocol == nil) {
             uniqueProtocol = [[CDOCProtocol alloc] init];
@@ -59,10 +63,14 @@
             // adopted protocols still not set, will want uniqued instances
         } else {
         }
-        _uniqueProtocolsByAddress[key] = uniqueProtocol;
+        if (key){
+            _uniqueProtocolsByAddress[key] = uniqueProtocol;
+        } else {
+            VerboseLog(@"no key for %@", uniqueProtocol);
+        }
     }
     
-    //NSLog(@"uniqued protocol names: %@", [[[protocolsByName allKeys] sortedArrayUsingSelector:@selector(compare:)] componentsJoinedByString:@", "]);
+    InfoLog(@"uniqued protocol names: %@", [[[_uniqueProtocolsByName allKeys] sortedArrayUsingSelector:@selector(compare:)] componentsJoinedByString:@", "]);
     
     // And finally fill in adopted protocols, instance and class methods.  And properties.
     for (NSNumber *key in [[_protocolsByAddress allKeys] sortedArrayUsingSelector:@selector(compare:)]) {
@@ -70,14 +78,18 @@
         CDOCProtocol *uniqueProtocol = _uniqueProtocolsByName[p1.name];
         
         // Add the uniqued adopted protocols
-        for (CDOCProtocol *p2 in [p1 protocols])
-            [uniqueProtocol addProtocol:_uniqueProtocolsByName[p2.name]];
+        for (CDOCProtocol *p2 in [p1 protocols]) {
+            id prot = _uniqueProtocolsByName[p2.name];
+            if (prot) {
+                [uniqueProtocol addProtocol:prot];
+            }
+        }
         
         [uniqueProtocol mergeMethodsFromProtocol:p1];
         [uniqueProtocol mergePropertiesFromProtocol:p1];
     }
     
-    //NSLog(@"protocolsByName: %@", protocolsByName);
+    InfoLog(@"protocolsByName: %@", _uniqueProtocolsByName);
 }
 
 #pragma mark - Results
@@ -86,6 +98,7 @@
 
 - (NSArray *)uniqueProtocolsAtAddresses:(NSArray *)addresses;
 {
+    InfoLog(@"%s: addresses: %@", _cmds, addresses);
     NSMutableArray *protocols = [NSMutableArray array];
 
     for (NSNumber *protocolAddress in addresses) {

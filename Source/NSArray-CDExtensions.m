@@ -5,6 +5,9 @@
 
 #import "NSArray-CDExtensions.h"
 
+#import "CDTopologicalSortProtocol.h"
+#import "CDTopoSortNode.h"
+
 @implementation NSArray (CDExtensions)
 
 - (NSArray *)reversedArray;
@@ -26,9 +29,12 @@
         CDTopoSortNode *node = [[CDTopoSortNode alloc] initWithObject:object];
         [node addDependanciesFromArray:[object dependancies]];
 
-        if (nodesByName[node.identifier] != nil)
-            NSLog(@"Warning: Duplicate identifier (%@) in %s", node.identifier, __cmd);
-        nodesByName[node.identifier] = node;
+        if (nodesByName[node.identifier] != nil) {
+            DLog(@"Warning: Duplicate identifier (%@) in %s", node.identifier, _cmds);
+        }
+        if (node.identifier){
+            nodesByName[node.identifier] = node;
+        }
     }
 
     NSMutableArray *sortedArray = [NSMutableArray array];

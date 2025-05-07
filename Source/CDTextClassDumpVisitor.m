@@ -15,8 +15,6 @@
 #import "CDVisitorPropertyState.h"
 #import "CDOCInstanceVariable.h"
 
-static BOOL debug = NO;
-
 @interface CDTextClassDumpVisitor ()
 @end
 
@@ -123,17 +121,17 @@ static BOOL debug = NO;
 {
     CDOCProperty *property = [propertyState propertyForAccessor:method.name];
     if (property == nil) {
-        //NSLog(@"No property for method: %@", method.name);
+        //DLog(@"No property for method: %@", method.name);
         [self.resultString appendString:@"- "];
         [method appendToString:self.resultString typeController:self.classDump.typeController];
         [self.resultString appendString:@"\n"];
     } else {
         if ([propertyState hasUsedProperty:property] == NO) {
-            //NSLog(@"Emitting property %@ triggered by method %@", property.name, method.name);
+            //DLog(@"Emitting property %@ triggered by method %@", property.name, method.name);
             [self visitProperty:property];
             [propertyState useProperty:property];
         } else {
-            //NSLog(@"Have already emitted property %@ triggered by method %@", property.name, method.name);
+            //DLog(@"Have already emitted property %@ triggered by method %@", property.name, method.name);
         }
     }
 }
@@ -197,8 +195,8 @@ static BOOL debug = NO;
     if ([remaining count] > 0) {
         [self.resultString appendString:@"\n"];
         [self.resultString appendFormat:@"// Remaining properties\n"];
-        //NSLog(@"Warning: remaining undeclared property count: %u", [remaining count]);
-        //NSLog(@"remaining: %@", remaining);
+        //DLog(@"Warning: remaining undeclared property count: %u", [remaining count]);
+        //DLog(@"remaining: %@", remaining);
         for (CDOCProperty *property in remaining)
             [self visitProperty:property];
     }
@@ -227,7 +225,7 @@ static BOOL debug = NO;
     
     for (NSString *attr in attrs) {
         if ([attr hasPrefix:@"T"]) {
-            if (debug) NSLog(@"Warning: Property attribute 'T' should occur only occur at the beginning");
+            VerboseLog(@"Warning: Property attribute 'T' should occur only occur at the beginning");
         } else if ([attr hasPrefix:@"R"]) {
             [alist addObject:@"readonly"];
         } else if ([attr hasPrefix:@"C"]) {
@@ -256,7 +254,7 @@ static BOOL debug = NO;
             // @property int prop; // @dynamic prop;
             isDynamic = YES;
         } else {
-            if (debug) NSLog(@"Warning: Unknown property attribute '%@'", attr);
+            VerboseLog(@"Warning: Unknown property attribute '%@'", attr);
             [unknownAttrs addObject:attr];
         }
     }

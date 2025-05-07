@@ -63,9 +63,12 @@
 // This assumes that the protocol name doesn't change after it's been added to this.
 - (void)addProtocol:(CDOCProtocol *)protocol;
 {
+    ILOG_CMD;
     if ([_adoptedProtocolNames containsObject:protocol.name] == NO) {
         [_protocols addObject:protocol];
-        [_adoptedProtocolNames addObject:protocol.name];
+        if (protocol.name){
+            [_adoptedProtocolNames addObject:protocol.name];
+        }
     }
 }
 
@@ -240,23 +243,34 @@
     NSMutableDictionary *optionalInstanceMethodsByName = [NSMutableDictionary dictionary];
     NSMutableDictionary *classMethodsByName            = [NSMutableDictionary dictionary];
     NSMutableDictionary *optionalClassMethodsByName    = [NSMutableDictionary dictionary];
+   
+    for (CDOCMethod *method in _instanceMethods) {
+        if (method.name){
+            instanceMethodsByName[method.name] = method;
+        }
+    }
     
-    for (CDOCMethod *method in _instanceMethods)
-        instanceMethodsByName[method.name] = method;
+    for (CDOCMethod *method in _optionalInstanceMethods) {
+        if (method.name){
+            optionalInstanceMethodsByName[method.name] = method;
+        }
+    }
     
-    for (CDOCMethod *method in _optionalInstanceMethods)
-        optionalInstanceMethodsByName[method.name] = method;
+    for (CDOCMethod *method in _classMethods) {
+        if (method.name){
+            classMethodsByName[method.name] = method;
+        }
+    }
     
-    for (CDOCMethod *method in _classMethods)
-        classMethodsByName[method.name] = method;
-    
-    for (CDOCMethod *method in _optionalClassMethods)
-        optionalClassMethodsByName[method.name] = method;
-    
+    for (CDOCMethod *method in _optionalClassMethods) {
+        if (method.name){
+            optionalClassMethodsByName[method.name] = method;
+        }
+    }
     // Instance methods
     for (CDOCMethod *method in other.instanceMethods) {
         CDOCMethod *m2 = instanceMethodsByName[method.name];
-        if (m2 == nil) {
+        if (m2 == nil && method.name != nil) {
             // Add if it is not an optional instance method.
             if (optionalInstanceMethodsByName[method.name] == nil) {
                 [self addInstanceMethod:method];
@@ -267,7 +281,7 @@
     
     for (CDOCMethod *method in other.optionalInstanceMethods) {
         CDOCMethod *m2 = optionalInstanceMethodsByName[method.name];
-        if (m2 == nil) {
+        if (m2 == nil && method.name != nil) {
             m2 = instanceMethodsByName[method.name];
             if (m2 == nil) {
                 [self addOptionalInstanceMethod:method];
@@ -281,11 +295,10 @@
             }
         }
     }
-
     // Class methods
     for (CDOCMethod *method in other.classMethods) {
         CDOCMethod *m2 = classMethodsByName[method.name];
-        if (m2 == nil) {
+        if (m2 == nil && method.name != nil) {
             // Add if it is not an optional class method.
             if (optionalClassMethodsByName[method.name] == nil) {
                 [self addClassMethod:method];
@@ -296,7 +309,7 @@
     
     for (CDOCMethod *method in other.optionalClassMethods) {
         CDOCMethod *m2 = optionalClassMethodsByName[method.name];
-        if (m2 == nil) {
+        if (m2 == nil && method.name != nil) {
             m2 = classMethodsByName[method.name];
             if (m2 == nil) {
                 [self addOptionalClassMethod:method];
@@ -305,7 +318,9 @@
                 // Move to the optional class methods.
                 [self addOptionalClassMethod:m2];
                 [_classMethods removeObject:m2];
-                optionalClassMethodsByName[m2.name] = m2;
+                if (m2.name){
+                    optionalClassMethodsByName[m2.name] = m2;
+                }
                 [classMethodsByName removeObjectForKey:m2.name];
             }
         }
@@ -316,12 +331,15 @@
 {
     NSMutableDictionary *propertiesByName = [NSMutableDictionary dictionary];
 
-    for (CDOCProperty *property in _properties)
-        propertiesByName[property.name] = property;
+    for (CDOCProperty *property in _properties) {
+        if (property.name){
+            propertiesByName[property.name] = property;
+        }
+    }
     
     for (CDOCProperty *property in other.properties) {
         CDOCProperty *p2 = propertiesByName[property.name];
-        if (p2 == nil) {
+        if (p2 == nil && property.name != nil) {
             [self addProperty:property];
             propertiesByName[property.name] = property;
         }

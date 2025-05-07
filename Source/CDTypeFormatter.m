@@ -10,8 +10,14 @@
 #import "CDTypeLexer.h"
 #import "CDTypeParser.h"
 #import "CDTypeController.h"
+#import "NSString-CDExtensions.h"
+#import "NSScanner-CDExtensions.h"
 
+#ifdef DEBUG
+static BOOL debug = YES;
+#else
 static BOOL debug = NO;
+#endif
 
 @interface CDTypeFormatter ()
 @end
@@ -20,7 +26,7 @@ static BOOL debug = NO;
 
 @implementation CDTypeFormatter
 {
-    __weak CDTypeController *_typeController;
+     CDTypeController *_typeController;
     
     NSUInteger _baseLevel;
     
@@ -110,7 +116,7 @@ static BOOL debug = NO;
     NSError *error = nil;
     NSArray *methodTypes = [parser parseMethodType:&error];
     if (methodTypes == nil)
-        NSLog(@"Warning: Parsing method types failed, %@", name);
+        DLog(@"Warning: Parsing method types failed, %@", name);
 
     if (methodTypes == nil || [methodTypes count] == 0) {
         return nil;
@@ -136,14 +142,17 @@ static BOOL debug = NO;
 
         NSMutableArray *parameterTypes = [NSMutableArray array];
         [typeDict setValue:parameterTypes forKey:@"parametertypes"];
-
+        if (!name) {
+            VerboseLog(@"%s NSScanner initWithString: %@", _cmds, name);
+            name = @"";
+        }
         NSScanner *scanner = [[NSScanner alloc] initWithString:name];
         while ([scanner isAtEnd] == NO) {
             NSString *str;
 
             // We can have unnamed parameters, :::
             if ([scanner scanUpToString:@":" intoString:&str]) {
-                //NSLog(@"str += '%@'", str);
+                //DLog(@"str += '%@'", str);
 //				int unnamedCount, unnamedIndex;
 //				unnamedCount = [str length];
 //				for (unnamedIndex = 0; unnamedIndex < unnamedCount; unnamedIndex++)
@@ -172,7 +181,7 @@ static BOOL debug = NO;
         }
 
         if (noMoreTypes) {
-            NSLog(@" /* Error: Ran out of types for this method. */");
+            DLog(@" /* Error: Ran out of types for this method. */");
         }
     }
 
@@ -186,7 +195,7 @@ static BOOL debug = NO;
     NSError *error = nil;
     NSArray *methodTypes = [parser parseMethodType:&error];
     if (methodTypes == nil)
-        NSLog(@"Warning: Parsing method types failed, %@", methodName);
+        DLog(@"Warning: Parsing method types failed, %@", methodName);
 
     if (methodTypes == nil || [methodTypes count] == 0) {
         return nil;
@@ -211,14 +220,17 @@ static BOOL debug = NO;
         [resultString appendString:@")"];
 
         index += 3;
-
+        if (!methodName) {
+            VerboseLog(@"%s NSScanner initWithString: %@", _cmds, methodName);
+            methodName = @"";
+        }
         NSScanner *scanner = [[NSScanner alloc] initWithString:methodName];
         while ([scanner isAtEnd] == NO) {
             NSString *str;
 
             // We can have unnamed paramenters, :::
             if ([scanner scanUpToString:@":" intoString:&str]) {
-                //NSLog(@"str += '%@'", str);
+                //DLog(@"str += '%@'", str);
                 [resultString appendString:str];
             }
             if ([scanner scanString:@":" intoString:NULL]) {

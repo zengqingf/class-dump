@@ -7,7 +7,7 @@
 
 #import "CDType.h"
 #import "CDTypeName.h"
-
+#import "NSString-CDExtensions.h"
 // If it's used in a method, then it should be declared at the top. (name or typedef)
 
 @implementation CDStructureInfo
@@ -72,7 +72,7 @@
         digest = [digest substringFromIndex:length - 8];
 
     self.typedefName = [NSString stringWithFormat:@"%@%@", baseName, digest];
-    //NSLog(@"typedefName: %@", self.typedefName);
+    //DLog(@"typedefName: %@", self.typedefName);
 }
 
 - (NSString *)name;

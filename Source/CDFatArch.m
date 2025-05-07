@@ -12,7 +12,7 @@
 
 @implementation CDFatArch
 {
-    __weak CDFatFile *_fatFile;
+    CDFatFile *_fatFile;
     
     // This is essentially struct fat_arch, but this way our property accessors can be synthesized.
     cpu_type_t _cputype;
@@ -49,7 +49,7 @@
         _size       = [cursor readBigInt32];
         _align      = [cursor readBigInt32];
         
-        //NSLog(@"self: %@", self);
+        //DLog(@"self: %@", self);
     }
 
     return self;

@@ -4,7 +4,7 @@
 //  Copyright (C) 1997-2019 Steve Nygard.
 
 #import "NSScanner-CDExtensions.h"
-
+#import "NSString-CDExtensions.h"
 @implementation NSScanner (CDExtensions)
 
 // other: $_:*

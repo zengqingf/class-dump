@@ -16,10 +16,10 @@
 - (id)initWithDataCursor:(CDMachOFileDataCursor *)cursor;
 {
     if ((self = [super initWithDataCursor:cursor])) {
-        //NSLog(@"current offset: %u", [cursor offset]);
+        //DLog(@"current offset: %u", [cursor offset]);
         _preboundDylibCommand.cmd     = [cursor readInt32];
         _preboundDylibCommand.cmdsize = [cursor readInt32];
-        //NSLog(@"cmdsize: %u", preboundDylibCommand.cmdsize);
+        //DLog(@"cmdsize: %u", preboundDylibCommand.cmdsize);
         
         _preboundDylibCommand.name.offset           = [cursor readInt32];
         _preboundDylibCommand.nmodules              = [cursor readInt32];
@@ -27,7 +27,11 @@
         
         if (_preboundDylibCommand.cmdsize > 20) {
             // Don't need this info right now.
-            [cursor advanceByLength:_preboundDylibCommand.cmdsize - 20];
+            @try {
+                [cursor advanceByLength:_preboundDylibCommand.cmdsize - 20];
+            } @catch (NSException *exception) {
+                CAUGHT_EXCEPTION_LOG;
+            }
         }
     }
 

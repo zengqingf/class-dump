@@ -4,8 +4,46 @@
 //  Copyright (C) 1997-2019 Steve Nygard.
 
 #import "NSString-CDExtensions.h"
+#import "NSData-CDExtensions.h"
+
+@implementation NSMutableDictionary (CDExtensions)
+
+- (NSString *)stringRepresentation {
+    NSString *error = nil;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    NSData *xmlData = [NSPropertyListSerialization dataFromPropertyList:self format:NSPropertyListXMLFormat_v1_0 errorDescription:&error];
+    NSString *s=[[NSString alloc] initWithData:xmlData encoding: NSUTF8StringEncoding];
+    return s;
+}
+
+@end
+
+@implementation NSDictionary (CDExtensions)
+
+- (NSString *)stringRepresentation {
+    NSString *error = nil;
+    NSData *xmlData = [NSPropertyListSerialization dataFromPropertyList:self format:NSPropertyListXMLFormat_v1_0 errorDescription:&error];
+    NSString *s=[[NSString alloc] initWithData:xmlData encoding: NSUTF8StringEncoding];
+    return s;
+}
+
+@end
 
 @implementation NSString (CDExtensions)
+
+- (id)dictionaryRepresentation {
+    NSString *error = nil;
+    NSPropertyListFormat format;
+    NSData *theData = [self dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:YES];
+
+    id theDict = [NSPropertyListSerialization propertyListFromData:theData
+                                                  mutabilityOption:NSPropertyListMutableContainersAndLeaves
+                                                            format:&format
+                                                  errorDescription:&error];
+#pragma clang diagnostic pop
+    return theDict;
+}
 
 + (NSString *)stringWithFileSystemRepresentation:(const char *)str;
 {

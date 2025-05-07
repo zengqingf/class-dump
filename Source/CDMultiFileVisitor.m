@@ -75,7 +75,7 @@
         [self generateStructureHeader];
     } else {
         // TODO: (2007-06-14) Make sure this generates no output files in this case.
-        NSLog(@"Warning: This file does not contain any Objective-C runtime information.");
+        fprintf(stderr, "Warning: This file does not contain any Objective-C runtime information: %s\n", [self.outputPath.lastPathComponent UTF8String]);
     }
 }
 
@@ -303,12 +303,12 @@
             NSError *error = nil;
             BOOL result = [fileManager createDirectoryAtPath:self.outputPath withIntermediateDirectories:YES attributes:nil error:&error];
             if (result == NO) {
-                NSLog(@"Error: Couldn't create output directory: %@", self.outputPath);
-                NSLog(@"error: %@", error); // TODO: Test this
+                DLog(@"Error: Couldn't create output directory: %@", self.outputPath);
+                DLog(@"error: %@", error); // TODO: Test this
                 return;
             }
         } else if (isDirectory == NO) {
-            NSLog(@"Error: File exists at output path: %@", self.outputPath);
+            DLog(@"Error: File exists at output path: %@", self.outputPath);
             return;
         }
     }

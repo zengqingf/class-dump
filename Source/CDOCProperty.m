@@ -8,10 +8,10 @@
 #import "CDTypeParser.h"
 #import "CDTypeLexer.h"
 #import "CDType.h"
+#import "NSString-CDExtensions.h"
 
 // http://developer.apple.com/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtPropertyIntrospection.html
 
-static BOOL debug = NO;
 
 @interface CDOCProperty ()
 @end
@@ -107,6 +107,10 @@ static BOOL debug = NO;
 - (void)_parseAttributes;
 {
     // On 10.6, Finder's TTaskErrorViewController class has a property with a nasty C++ type.  I just knew someone would make this difficult.
+    if (!self.attributeString) {
+        VerboseLog(@"%s NSScanner initWithString: %@", _cmds, self.attributeString);
+        return;
+    }
     NSScanner *scanner = [[NSScanner alloc] initWithString:self.attributeString];
 
     if ([scanner scanString:@"T" intoString:NULL]) {
@@ -134,7 +138,7 @@ static BOOL debug = NO;
             }
         }
     } else {
-        if (debug) NSLog(@"Error: Property attributes should begin with the type ('T') attribute, property name: %@", self.name);
+        VerboseLog(@"Error: Property attributes should begin with the type ('T') attribute, property name: %@", self.name);
     }
 
     for (NSString *attr in _attributes) {

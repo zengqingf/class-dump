@@ -10,6 +10,7 @@
 #import "CDTypeLexer.h" // For T_NAMED_OBJECT
 #import "CDTypeFormatter.h"
 #import "CDTypeParser.h"
+#import "NSString-CDExtensions.h"
 
 static BOOL debugMerge = NO;
 
@@ -216,7 +217,7 @@ static BOOL debugMerge = NO;
     NSError *error = nil;
     CDType *copiedType = [parser parseType:&error];
     if (copiedType == nil)
-        NSLog(@"Warning: Parsing type in %s failed, %@", __PRETTY_FUNCTION__, str);
+        DLog(@"Warning: Parsing type in %s failed, %@", __PRETTY_FUNCTION__, str);
     
     NSParameterAssert([str isEqualToString:copiedType.typeString]);
     
@@ -658,25 +659,25 @@ static BOOL debugMerge = NO;
 
     if (_primitiveType != otherType.primitiveType) {
         if (debugMerge) {
-            NSLog(@"--------------------");
-            NSLog(@"this: %@", self.typeString);
-            NSLog(@"other: %@", otherType.typeString);
-            NSLog(@"self isIDType? %u", self.isIDType);
-            NSLog(@"self isNamedObject? %u", self.isNamedObject);
-            NSLog(@"other isIDType? %u", otherType.isIDType);
-            NSLog(@"other isNamedObject? %u", otherType.isNamedObject);
+            DLog(@"--------------------");
+            DLog(@"this: %@", self.typeString);
+            DLog(@"other: %@", otherType.typeString);
+            DLog(@"self isIDType? %u", self.isIDType);
+            DLog(@"self isNamedObject? %u", self.isNamedObject);
+            DLog(@"other isIDType? %u", otherType.isIDType);
+            DLog(@"other isNamedObject? %u", otherType.isNamedObject);
         }
-        if (debugMerge) NSLog(@"%s, Can't merge because of type... %@ vs %@", __cmd, self.typeString, otherType.typeString);
+        if (debugMerge) DLog(@"%s, Can't merge because of type... %@ vs %@", _cmds, self.typeString, otherType.typeString);
         return NO;
     }
 
     if (_subtype != nil && [_subtype canMergeWithType:otherType.subtype] == NO) {
-        if (debugMerge) NSLog(@"%s, Can't merge subtype", __cmd);
+        if (debugMerge) DLog(@"%s, Can't merge subtype", _cmds);
         return NO;
     }
 
     if (_subtype == nil && otherType.subtype != nil) {
-        if (debugMerge) NSLog(@"%s, This subtype is nil, other isn't.", __cmd);
+        if (debugMerge) DLog(@"%s, This subtype is nil, other isn't.", _cmds);
         return NO;
     }
 
@@ -684,17 +685,17 @@ static BOOL debugMerge = NO;
     NSUInteger count = [_members count];
     NSUInteger otherCount = [otherMembers count];
 
-    //NSLog(@"members: %p", members);
-    //NSLog(@"otherMembers: %p", otherMembers);
-    //NSLog(@"%s, count: %u, otherCount: %u", __cmd, count, otherCount);
+    //DLog(@"members: %p", members);
+    //DLog(@"otherMembers: %p", otherMembers);
+    //DLog(@"%s, count: %u, otherCount: %u", _cmds, count, otherCount);
 
     if (count != 0 && otherCount == 0) {
-        if (debugMerge) NSLog(@"%s, count != 0 && otherCount is 0", __cmd);
+        if (debugMerge) DLog(@"%s, count != 0 && otherCount is 0", _cmds);
         return NO;
     }
 
     if (count != 0 && count != otherCount) {
-        if (debugMerge) NSLog(@"%s, count != 0 && count != otherCount", __cmd);
+        if (debugMerge) DLog(@"%s, count != 0 && count != otherCount", _cmds);
         return NO;
     }
 
@@ -711,17 +712,17 @@ static BOOL debugMerge = NO;
 
             // It seems to be okay if one of them didn't have a name
             if (thisTypeName != nil && otherTypeName != nil && [thisTypeName isEqual:otherTypeName] == NO) {
-                if (debugMerge) NSLog(@"%s, typeName mismatch on member %lu", __cmd, index);
+                if (debugMerge) DLog(@"%s, typeName mismatch on member %lu", _cmds, index);
                 return NO;
             }
 
             if (thisVariableName != nil && otherVariableName != nil && [thisVariableName isEqual:otherVariableName] == NO) {
-                if (debugMerge) NSLog(@"%s, variableName mismatch on member %lu", __cmd, index);
+                if (debugMerge) DLog(@"%s, variableName mismatch on member %lu", _cmds, index);
                 return NO;
             }
 
             if ([thisMember canMergeWithType:otherMember] == NO) {
-                if (debugMerge) NSLog(@"%s, Can't merge member %lu", __cmd, index);
+                if (debugMerge) DLog(@"%s, Can't merge member %lu", _cmds, index);
                 return NO;
             }
         }
@@ -738,19 +739,19 @@ static BOOL debugMerge = NO;
     [self _recursivelyMergeWithType:otherType];
     NSString *after = self.typeString;
     if (debugMerge) {
-        NSLog(@"----------------------------------------");
-        NSLog(@"%s", __cmd);
-        NSLog(@"before: %@", before);
-        NSLog(@" after: %@", after);
-        NSLog(@"----------------------------------------");
+        DLog(@"----------------------------------------");
+        DLog(@"%s", _cmds);
+        DLog(@"before: %@", before);
+        DLog(@" after: %@", after);
+        DLog(@"----------------------------------------");
     }
 }
 
 - (void)_recursivelyMergeWithType:(CDType *)otherType;
 {
     if (self.isIDType && otherType.isNamedObject) {
-        //NSLog(@"thisType: %@", [self typeString]);
-        //NSLog(@"otherType: %@", [otherType typeString]);
+        //DLog(@"thisType: %@", [self typeString]);
+        //DLog(@"otherType: %@", [otherType typeString]);
         _primitiveType = T_NAMED_OBJECT;
         _typeName = [otherType.typeName copy];
         return;
@@ -761,7 +762,7 @@ static BOOL debugMerge = NO;
     }
 
     if (_primitiveType != otherType.primitiveType) {
-        NSLog(@"Warning: Trying to merge different types in %s", __cmd);
+        DLog(@"Warning: Trying to merge different types in %s", _cmds);
         return;
     }
 
@@ -782,12 +783,12 @@ static BOOL debugMerge = NO;
         //[self setMembers:otherMembers];
     } else if (count != otherCount) {
         // Not so bad after all.  Even kind of common.  Consider _flags.
-        NSLog(@"Warning: Types have different number of members.  This is bad. (%lu vs %lu)", count, otherCount);
-        NSLog(@"%@ vs %@", self.typeString, otherType.typeString);
+        DLog(@"Warning: Types have different number of members.  This is bad. (%lu vs %lu)", count, otherCount);
+        DLog(@"%@ vs %@", self.typeString, otherType.typeString);
         return;
     }
 
-    //NSLog(@"****************************************");
+    //DLog(@"****************************************");
     for (NSUInteger index = 0; index < count; index++) {
         CDType *thisMember = _members[index];
         CDType *otherMember = otherMembers[index];
@@ -796,14 +797,14 @@ static BOOL debugMerge = NO;
         CDTypeName *otherTypeName = otherMember.typeName;
         NSString *thisVariableName = thisMember.variableName;
         NSString *otherVariableName = otherMember.variableName;
-        //NSLog(@"%d: type: %@ vs %@", index, thisTypeName, otherTypeName);
-        //NSLog(@"%d: vari: %@ vs %@", index, thisVariableName, otherVariableName);
+        //DLog(@"%d: type: %@ vs %@", index, thisTypeName, otherTypeName);
+        //DLog(@"%d: vari: %@ vs %@", index, thisVariableName, otherVariableName);
 
         if ((thisTypeName == nil && otherTypeName != nil) || (thisTypeName != nil && otherTypeName == nil)) {
             ; // It seems to be okay if one of them didn't have a name
-            //NSLog(@"Warning: (1) type names don't match, %@ vs %@", thisTypeName, otherTypeName);
+            //DLog(@"Warning: (1) type names don't match, %@ vs %@", thisTypeName, otherTypeName);
         } else if (thisTypeName != nil && [thisTypeName isEqual:otherTypeName] == NO) {
-            NSLog(@"Warning: (2) type names don't match:\n\t%@ vs \n\t%@.", thisTypeName, otherTypeName);
+            DLog(@"Warning: (2) type names don't match:\n\t%@ vs \n\t%@.", thisTypeName, otherTypeName);
             // In this case, we should skip the merge.
         }
 
@@ -811,7 +812,7 @@ static BOOL debugMerge = NO;
             if (thisVariableName == nil)
                 thisMember.variableName = otherVariableName;
             else if ([thisVariableName isEqual:otherVariableName] == NO)
-                NSLog(@"Warning: Different variable names for same member...");
+                DLog(@"Warning: Different variable names for same member...");
         }
 
         [thisMember _recursivelyMergeWithType:otherMember];
@@ -915,7 +916,7 @@ static BOOL debugMerge = NO;
     [_subtype phase0RecursivelyFixStructureNames:flag];
 
     if ([_typeName.name hasPrefix:@"$"]) {
-        if (flag) NSLog(@"%s, changing type name %@ to ?", __cmd, _typeName.name);
+        if (flag) DLog(@"%s, changing type name %@ to ?", _cmds, _typeName.name);
         _typeName.name = @"?";
     }
 
@@ -948,10 +949,10 @@ static BOOL debugMerge = NO;
     [self _phase2MergeWithTypeController:typeController debug:phase2Debug];
     NSString *after = self.typeString;
     if (phase2Debug && [before isEqualToString:after] == NO) {
-        NSLog(@"----------------------------------------");
-        NSLog(@"%s, merge changed type", __cmd);
-        NSLog(@"before: %@", before);
-        NSLog(@" after: %@", after);
+        DLog(@"----------------------------------------");
+        DLog(@"%s, merge changed type", _cmds);
+        DLog(@"before: %@", before);
+        DLog(@" after: %@", after);
     }
 }
 
@@ -971,9 +972,9 @@ static BOOL debugMerge = NO;
                 [self mergeWithType:phase2Type];
             } else {
                 if (phase2Debug) {
-                    NSLog(@"Found phase2 type, but can't merge with it.");
-                    NSLog(@"this: %@", [self typeString]);
-                    NSLog(@"that: %@", [phase2Type typeString]);
+                    DLog(@"Found phase2 type, but can't merge with it.");
+                    DLog(@"this: %@", [self typeString]);
+                    DLog(@"that: %@", [phase2Type typeString]);
                 }
             }
         }
@@ -993,11 +994,11 @@ static BOOL debugMerge = NO;
 
 - (void)phase3RegisterMembersWithTypeController:(CDTypeController *)typeController;
 {
-    //NSLog(@" > %s %@", __cmd, [self typeString]);
+    //DLog(@" > %s %@", _cmds, [self typeString]);
     for (CDType *member in _members) {
         [member phase3RegisterWithTypeController:typeController];
     }
-    //NSLog(@"<  %s", __cmd);
+    //DLog(@"<  %s", _cmds);
 }
 
 // Bottom-up
@@ -1017,9 +1018,9 @@ static BOOL debugMerge = NO;
             } else {
 #if 0
                 // This can happen in AU Lab, that struct has no members...
-                NSLog(@"Found phase3 type, but can't merge with it.");
-                NSLog(@"this: %@", self.typeString);
-                NSLog(@"that: %@", phase3Type.typeString);
+                DLog(@"Found phase3 type, but can't merge with it.");
+                DLog(@"this: %@", self.typeString);
+                DLog(@"that: %@", phase3Type.typeString);
 #endif
             }
         }

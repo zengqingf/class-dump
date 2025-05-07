@@ -5,8 +5,6 @@
 
 #import "CDLCUnknown.h"
 
-static BOOL debug = NO;
-
 @implementation CDLCUnknown
 {
     struct load_command _loadCommand;
@@ -17,15 +15,21 @@ static BOOL debug = NO;
 - (id)initWithDataCursor:(CDMachOFileDataCursor *)cursor;
 {
     if ((self = [super initWithDataCursor:cursor])) {
-        if (debug) NSLog(@"offset: %lu", [cursor offset]);
+        VerboseLog(@"offset: %lu", [cursor offset]);
         _loadCommand.cmd     = [cursor readInt32];
         _loadCommand.cmdsize = [cursor readInt32];
-        if (debug) NSLog(@"cmdsize: %u", _loadCommand.cmdsize);
+         VerboseLog(@"cmdsize: %u", _loadCommand.cmdsize);
         
         if (_loadCommand.cmdsize > 8) {
             NSMutableData *commandData = [[NSMutableData alloc] init];
-            [cursor appendBytesOfLength:_loadCommand.cmdsize - 8 intoData:commandData];
-            _commandData = [commandData copy];
+            @try {
+                [cursor appendBytesOfLength:_loadCommand.cmdsize - 8 intoData:commandData];
+                _commandData = [commandData copy];
+            } @catch (NSException *exception) {
+                CAUGHT_EXCEPTION_LOG;
+                commandData = nil;
+            }
+            
         } else {
             _commandData = nil;
         }

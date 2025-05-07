@@ -33,7 +33,8 @@
     if (newOffset <= [_data length]) {
         _offset = newOffset;
     } else {
-        [NSException raise:NSRangeException format:@"Trying to seek past end of data."];
+        NSString *details = [NSString stringWithFormat:@"%016llx (%lu) > %lu",newOffset, newOffset, [_data length]];
+        [NSException raise:NSRangeException format:@"Trying to seek past end of data: %@", details];
     }
 }
 
@@ -61,7 +62,7 @@
         result = OSReadLittleInt16([_data bytes], _offset) & 0xFF;
         _offset += sizeof(result);
     } else {
-        [NSException raise:NSRangeException format:@"Trying to read past end in %s", __cmd];
+        [NSException raise:NSRangeException format:@"Trying to read past end in %s", _cmds];
         result = 0;
     }
 
@@ -76,7 +77,7 @@
         result = OSReadLittleInt16([_data bytes], _offset);
         _offset += sizeof(result);
     } else {
-        [NSException raise:NSRangeException format:@"Trying to read past end in %s", __cmd];
+        [NSException raise:NSRangeException format:@"Trying to read past end in %s", _cmds];
         result = 0;
     }
 
@@ -91,7 +92,7 @@
         result = OSReadLittleInt32([_data bytes], _offset);
         _offset += sizeof(result);
     } else {
-        [NSException raise:NSRangeException format:@"Trying to read past end in %s", __cmd];
+        [NSException raise:NSRangeException format:@"Trying to read past end in %s", _cmds];
         result = 0;
     }
 
@@ -104,11 +105,11 @@
 
     if (_offset + sizeof(result) <= [_data length]) {
 //        uint8_t *ptr = [_data bytes] + _offset;
-//        NSLog(@"%016llx: %02x %02x %02x %02x %02x %02x %02x %02x", _offset, ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], ptr[6], ptr[7]);
+//        DLog(@"%016llx: %02x %02x %02x %02x %02x %02x %02x %02x", _offset, ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], ptr[6], ptr[7]);
         result = OSReadLittleInt64([_data bytes], _offset);
         _offset += sizeof(result);
     } else {
-        [NSException raise:NSRangeException format:@"Trying to read past end in %s", __cmd];
+        [NSException raise:NSRangeException format:@"Trying to read past end in %s", _cmds];
         result = 0;
     }
 
@@ -123,7 +124,7 @@
         result = OSReadBigInt16([_data bytes], _offset);
         _offset += sizeof(result);
     } else {
-        [NSException raise:NSRangeException format:@"Trying to read past end in %s", __cmd];
+        [NSException raise:NSRangeException format:@"Trying to read past end in %s", _cmds];
         result = 0;
     }
 
@@ -138,7 +139,7 @@
         result = OSReadBigInt32([_data bytes], _offset);
         _offset += sizeof(result);
     } else {
-        [NSException raise:NSRangeException format:@"Trying to read past end in %s", __cmd];
+        [NSException raise:NSRangeException format:@"Trying to read past end in %s", _cmds];
         result = 0;
     }
 
@@ -153,7 +154,7 @@
         result = OSReadBigInt64([_data bytes], _offset);
         _offset += sizeof(result);
     } else {
-        [NSException raise:NSRangeException format:@"Trying to read past end in %s", __cmd];
+        [NSException raise:NSRangeException format:@"Trying to read past end in %s", _cmds];
         result = 0;
     }
 
@@ -196,7 +197,7 @@
         [data appendBytes:(uint8_t *)[_data bytes] + _offset length:length];
         _offset += length;
     } else {
-        [NSException raise:NSRangeException format:@"Trying to read past end in %s", __cmd];
+        [NSException raise:NSRangeException format:@"Trying to read past end in %s", _cmds];
     }
 }
 
@@ -206,7 +207,7 @@
         memcpy(buf, (uint8_t *)[_data bytes] + _offset, length);
         _offset += length;
     } else {
-        [NSException raise:NSRangeException format:@"Trying to read past end in %s", __cmd];
+        [NSException raise:NSRangeException format:@"Trying to read past end in %s", _cmds];
     }
 }
 
@@ -231,7 +232,7 @@
             // Jump through some hoops if the length is padded with zero bytes, as in the case of 10.5's Property List Editor and iSync Plug-in Maker.
             buf = malloc(length + 1);
             if (buf == NULL) {
-                NSLog(@"Error: malloc() failed.");
+                DLog(@"Error: malloc() failed.");
                 return nil;
             }
 
@@ -248,7 +249,7 @@
             return str;
         }
     } else {
-        [NSException raise:NSRangeException format:@"Trying to read past end in %s", __cmd];
+        [NSException raise:NSRangeException format:@"Trying to read past end in %s", _cmds];
     }
 
     return nil;

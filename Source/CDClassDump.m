@@ -18,6 +18,8 @@
 #import "CDTypeController.h"
 #import "CDSearchPathState.h"
 
+#import "NSString-CDExtensions.h"
+
 NSString *CDErrorDomain_ClassDump = @"CDErrorDomain_ClassDump";
 
 NSString *CDErrorKey_Exception    = @"CDErrorKey_Exception";
@@ -114,11 +116,57 @@ NSString *CDErrorKey_Exception    = @"CDErrorKey_Exception";
     return self.containsObjectiveCData || self.hasEncryptedFiles;
 }
 
++ (BOOL)printFixupData {
+    return [[[NSProcessInfo processInfo] arguments] containsObject:@"-F"];
+}
+
++ (BOOL)isDebug {
+    BOOL db = [[NSUserDefaults standardUserDefaults] boolForKey:@"debug"];
+    //DLog(@"db: %d, contains: %d",db, [[[NSProcessInfo processInfo] arguments] containsObject:@"-d"] );
+    return db || [[[NSProcessInfo processInfo] arguments] containsObject:@"-d"];
+}
+
++ (BOOL)isVerbose {
+    BOOL vb = [[NSUserDefaults standardUserDefaults] boolForKey:@"verbose"];
+    //DLog(@"vb: %d, contains: %d",vb, [[[NSProcessInfo processInfo] arguments] containsObject:@"-v"] );
+    return vb || [[[NSProcessInfo processInfo] arguments] containsObject:@"-v"];
+}
+
++ (void)logLevel:(NSInteger)level string:(NSString *)string {
+    if (level == 0 || [self isVerbose]){ //info level
+        if ([self isDebug] || [self isVerbose]){
+            DLog(@"%@", string);
+        }
+    } else {
+        if ([self isVerbose]){
+            DLog(@"%@", string);
+        }
+    }
+}
+
++ (void)logLevel:(NSInteger)level stringWithFormat:(NSString *)fmt, ... {
+    //DLog(@"logLevel: %lu", level);
+    //return;
+    va_list args;
+    va_start(args, fmt);
+    va_end(args);
+    //NSString *output = [[NSString alloc] initWithFormat:fmt arguments:args];
+    //DLog(@"we made a output: %@", output);
+    if (level == 0){ //info level
+        DLog(fmt, args);
+    } else {
+        if ([self isVerbose]){
+            DLog(fmt, args);
+        }
+    }
+}
+
 - (BOOL)loadFile:(CDFile *)file error:(NSError *__autoreleasing *)error;
 {
-    //NSLog(@"targetArch: (%08x, %08x)", targetArch.cputype, targetArch.cpusubtype);
+    InfoLog(@"loadFile: %@", file);
+    //DLog(@"targetArch: (%08x, %08x)", targetArch.cputype, targetArch.cpusubtype);
     CDMachOFile *machOFile = [file machOFileWithArch:_targetArch];
-    //NSLog(@"machOFile: %@", machOFile);
+    //DLog(@"machOFile: %@", machOFile);
     if (machOFile == nil) {
         if (error != NULL) {
             NSString *failureReason;
@@ -163,7 +211,7 @@ NSString *CDErrorKey_Exception    = @"CDErrorKey_Exception";
             }
         }
         @catch (NSException *exception) {
-            NSLog(@"Caught exception: %@", exception);
+            DLog(@"Caught exception: %@", exception);
             if (error != NULL) {
                 NSDictionary *userInfo = @{
                 NSLocalizedFailureReasonErrorKey : @"Caught exception",
@@ -182,9 +230,11 @@ NSString *CDErrorKey_Exception    = @"CDErrorKey_Exception";
 
 - (void)processObjectiveCData;
 {
+    ILOG_CMD;
     for (CDMachOFile *machOFile in self.machOFiles) {
         CDObjectiveCProcessor *processor = [[[machOFile processorClass] alloc] initWithMachOFile:machOFile];
-        [processor process];
+        processor.shallow = self.shallow;
+        [processor processStoppingEarly:self.stopAfterPreProcessor];
         [_objcProcessors addObject:processor];
     }
 }
@@ -210,19 +260,19 @@ NSString *CDErrorKey_Exception    = @"CDErrorKey_Exception";
     if ([name hasPrefix:executablePathPrefix]) {
         adjustedName = [name stringByReplacingOccurrencesOfString:executablePathPrefix withString:self.searchPathState.executablePath];
     } else if ([name hasPrefix:rpathPrefix]) {
-        //NSLog(@"Searching for %@ through run paths: %@", name, [searchPathState searchPaths]);
+        //DLog(@"Searching for %@ through run paths: %@", name, [searchPathState searchPaths]);
         for (NSString *searchPath in [self.searchPathState searchPaths]) {
             NSString *str = [name stringByReplacingOccurrencesOfString:rpathPrefix withString:searchPath];
-            //NSLog(@"trying %@", str);
+            //DLog(@"trying %@", str);
             if ([[NSFileManager defaultManager] fileExistsAtPath:str]) {
                 adjustedName = str;
-                //NSLog(@"Found it!");
+                //DLog(@"Found it!");
                 break;
             }
         }
         if (adjustedName == nil) {
             adjustedName = name;
-            //NSLog(@"Did not find it.");
+            //DLog(@"Did not find it.");
         }
     } else if (self.sdkRoot != nil) {
         adjustedName = [self.sdkRoot stringByAppendingPathComponent:name];
@@ -235,11 +285,11 @@ NSString *CDErrorKey_Exception    = @"CDErrorKey_Exception";
         CDFile *file = [CDFile fileWithContentsOfFile:adjustedName searchPathState:self.searchPathState];
 
         if (file == nil || [self loadFile:file error:NULL] == NO)
-            NSLog(@"Warning: Failed to load: %@", adjustedName);
+            DLog(@"Warning: Failed to load: %@", adjustedName);
 
         machOFile = _machOFilesByName[adjustedName];
         if (machOFile == nil) {
-            NSLog(@"Warning: Couldn't load MachOFile with ID: %@, adjustedID: %@", name, adjustedName);
+            DLog(@"Warning: Couldn't load MachOFile with ID: %@, adjustedID: %@", name, adjustedName);
         }
     }
 
@@ -253,9 +303,9 @@ NSString *CDErrorKey_Exception    = @"CDErrorKey_Exception";
         return;
 
     [resultString appendString:@"//\n"];
-    [resultString appendFormat:@"//     Generated by class-dump %s.\n", CLASS_DUMP_VERSION];
+    [resultString appendFormat:@"//     Generated by classdump-c %s.\n", CLASS_DUMP_VERSION];
     [resultString appendString:@"//\n"];
-    [resultString appendString:@"//  Copyright (C) 1997-2019 Steve Nygard.\n"];
+    [resultString appendString:@"//  Copyright (C) 1997-2019 Steve Nygard. Updated in 2022 by Kevin Bradley.\n"];
     [resultString appendString:@"//\n\n"];
 
     if (self.sdkRoot != nil) {
@@ -267,6 +317,7 @@ NSString *CDErrorKey_Exception    = @"CDErrorKey_Exception";
 
 - (void)registerTypes;
 {
+    ILOG_CMD;
     for (CDObjectiveCProcessor *processor in self.objcProcessors) {
         [processor registerTypesWithObject:self.typeController phase:0];
     }

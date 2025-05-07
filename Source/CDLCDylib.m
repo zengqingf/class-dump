@@ -31,10 +31,10 @@ static NSString *CDDylibVersionString(uint32_t version)
         _dylibCommand.dylib.compatibility_version = [cursor readInt32];
         
         NSUInteger length = _dylibCommand.cmdsize - sizeof(_dylibCommand);
-        //NSLog(@"expected length: %u", length);
+        //DLog(@"expected length: %u", length);
         
         _path = [cursor readStringOfLength:length encoding:NSASCIIStringEncoding];
-        //NSLog(@"path: %@", path);
+        //DLog(@"path: %@", path);
     }
 
     return self;
@@ -75,6 +75,16 @@ static NSString *CDDylibVersionString(uint32_t version)
 - (NSString *)formattedCompatibilityVersion;
 {
     return CDDylibVersionString(self.compatibilityVersion);
+}
+
+- (NSString *)path {
+    return _path;
+}
+
+- (NSString *)description {
+    NSString *og = [super description];
+    return [NSString stringWithFormat:@"%@ %@ (compatibility version %@, current version %@)", og,
+            self.path, CDDylibVersionString(self.compatibilityVersion), CDDylibVersionString(self.currentVersion)];
 }
 
 #if 0

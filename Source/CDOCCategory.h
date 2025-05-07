@@ -4,6 +4,7 @@
 //  Copyright (C) 1997-2019 Steve Nygard.
 
 #import "CDOCProtocol.h"
+#import "CDTopologicalSortProtocol.h"
 
 @class CDOCClassReference;
 

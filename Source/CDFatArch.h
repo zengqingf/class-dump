@@ -24,7 +24,7 @@
 @property (nonatomic, readonly) BOOL uses64BitABI;
 @property (nonatomic, readonly) BOOL uses64BitLibraries;
 
-@property (weak) CDFatFile *fatFile;
+@property  CDFatFile *fatFile;
 
 @property (nonatomic, readonly) CDArch arch;
 @property (nonatomic, readonly) NSString *archName;

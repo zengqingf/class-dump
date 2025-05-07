@@ -2,13 +2,16 @@
 
 //  This file is part of class-dump, a utility for examining the Objective-C segment of Mach-O files.
 //  Copyright (C) 1997-2019 Steve Nygard.
-
 #include <stdio.h>
-#include <libc.h>
+#include <unistd.h>
+#include <string.h>
+#include <pthread.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <stdlib.h>
 #include <mach-o/arch.h>
+
+#import "NSString-CDExtensions.h"
 
 #import "CDClassDump.h"
 #import "CDFindMethodVisitor.h"
@@ -23,8 +26,8 @@
 void print_usage(void)
 {
     fprintf(stderr,
-            "class-dump %s\n"
-            "Usage: class-dump [options] <mach-o-file>\n"
+            "class-dump-c %s\n"
+            "Usage: classdumpc [options] <mach-o-file>\n"
             "\n"
             "  where options are:\n"
             "        -a             show instance variable offsets\n"
@@ -39,6 +42,7 @@ void print_usage(void)
             "        -s             sort classes and categories by name\n"
             "        -S             sort methods by name\n"
             "        -t             suppress header in output, for testing\n"
+            "        -e             dump the entitlements\n"
             "        --list-arches  list the arches in the file, then exit\n"
             "        --sdk-ios      specify iOS SDK version (will look for /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS<version>.sdk\n"
             "                       or /Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS<version>.sdk)\n"
@@ -67,6 +71,9 @@ int main(int argc, char *argv[])
         BOOL shouldPrintVersion = NO;
         CDArch targetArch;
         BOOL hasSpecifiedArch = NO;
+        BOOL suppressAllHeaderOutput = NO;
+        BOOL dumpEnt = NO; //whether or not to dump entitlements
+        BOOL shallow = NO; //whether to skip protocols and categories, for testing
         NSString *outputPath;
         NSMutableSet *hiddenSections = [NSMutableSet set];
 
@@ -92,6 +99,13 @@ int main(int argc, char *argv[])
             { "sdk-mac",                 required_argument, NULL, CD_OPT_SDK_MAC },
             { "sdk-root",                required_argument, NULL, CD_OPT_SDK_ROOT },
             { "hide",                    required_argument, NULL, CD_OPT_HIDE },
+            { "entitlements",            no_argument,       NULL, 'e' },
+            { "debug",                   no_argument,       NULL, 'd'},
+            { "verbose",                 no_argument,       NULL, 'v'},
+            { "fixups",                  no_argument,       NULL, 'F'},
+            { "silent",                  no_argument,       NULL, 'x'},
+            { "preprocessor-exit",       no_argument,       NULL, 'z'},
+            { "shallow",                 no_argument,       NULL, 'h'},
             { NULL,                      0,                 NULL, 0 },
         };
 
@@ -99,10 +113,15 @@ int main(int argc, char *argv[])
             print_usage();
             exit(0);
         }
-
+        [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"verbose"]; //reset it every time
+        [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"debug"];
+#ifdef DEBUG
+        [[NSUserDefaults standardUserDefaults] setBool:TRUE forKey:@"debug"];
+        [[NSUserDefaults standardUserDefaults] setBool:TRUE forKey:@"verbose"]; //make it easier to avoid hardcoded macros to enable logging
+#endif
         CDClassDump *classDump = [[CDClassDump alloc] init];
 
-        while ( (ch = getopt_long(argc, argv, "aAC:f:HIo:rRsSt", longopts, NULL)) != -1) {
+        while ( (ch = getopt_long(argc, argv, "aAC:f:HIo:rRsStvFxdzhe", longopts, NULL)) != -1) {
             switch (ch) {
                 case CD_OPT_ARCH: {
                     NSString *name = [NSString stringWithUTF8String:optarg];
@@ -126,7 +145,7 @@ int main(int argc, char *argv[])
                     
                 case CD_OPT_SDK_IOS: {
                     NSString *root = [NSString stringWithUTF8String:optarg];
-                    //NSLog(@"root: %@", root);
+                    //DLog(@"root: %@", root);
                     NSString *str;
                     if ([[NSFileManager defaultManager] fileExistsAtPath: @"/Applications/Xcode.app"]) {
                         str = [NSString stringWithFormat:@"/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS%@.sdk", root];
@@ -140,7 +159,7 @@ int main(int argc, char *argv[])
                     
                 case CD_OPT_SDK_MAC: {
                     NSString *root = [NSString stringWithUTF8String:optarg];
-                    //NSLog(@"root: %@", root);
+                    //DLog(@"root: %@", root);
                     NSString *str;
                     if ([[NSFileManager defaultManager] fileExistsAtPath: @"/Applications/Xcode.app"]) {
                         str = [NSString stringWithFormat:@"/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX%@.sdk", root];
@@ -154,7 +173,7 @@ int main(int argc, char *argv[])
                     
                 case CD_OPT_SDK_ROOT: {
                     NSString *root = [NSString stringWithUTF8String:optarg];
-                    //NSLog(@"root: %@", root);
+                    //DLog(@"root: %@", root);
                     classDump.sdkRoot = root;
                     
                     break;
@@ -170,6 +189,33 @@ int main(int argc, char *argv[])
                     }
                     break;
                 }
+                    
+                case 'e':
+                    dumpEnt = true;
+                    classDump.dumpEntitlements = true;
+                    break;
+                    
+                case 'h':
+                    shallow = true;
+                    classDump.shallow = true;
+                    VerboseLog(@"SHALLOW");
+                    break;
+                    
+                case 'z':
+                    classDump.stopAfterPreProcessor = true;
+                    break;
+                case 'd':
+                    [[NSUserDefaults standardUserDefaults] setBool:TRUE forKey:@"debug"];
+                    break;
+                case 'F':
+                    break;
+                case 'x':
+                    suppressAllHeaderOutput = YES;
+                    break;
+                case 'v':
+                    [[NSUserDefaults standardUserDefaults] setBool:TRUE forKey:@"verbose"];
+                    classDump.verbose = YES;
+                    break;
                     
                 case 'a':
                     classDump.shouldShowIvarOffsets = YES;
@@ -294,12 +340,15 @@ int main(int argc, char *argv[])
                         fprintf(stderr, "Error: Couldn't get local architecture\n");
                         exit(1);
                     }
-                    //NSLog(@"No arch specified, best match for local arch is: (%08x, %08x)", targetArch.cputype, targetArch.cpusubtype);
+                    //DLog(@"No arch specified, best match for local arch is: (%08x, %08x)", targetArch.cputype, targetArch.cpusubtype);
                 } else {
-                    //NSLog(@"chosen arch is: (%08x, %08x)", targetArch.cputype, targetArch.cpusubtype);
+                    //DLog(@"chosen arch is: (%08x, %08x)", targetArch.cputype, targetArch.cpusubtype);
                 }
-
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wconditional-uninitialized"
+                //only doing the above because i know in this instance it will be initialized
                 classDump.targetArch = targetArch;
+#pragma clang diagnostic pop
                 classDump.searchPathState.executablePath = [executablePath stringByDeletingLastPathComponent];
 
                 NSError *error;
@@ -321,12 +370,28 @@ int main(int argc, char *argv[])
                         classDump.typeController.delegate = multiFileVisitor;
                         multiFileVisitor.outputPath = outputPath;
                         [classDump recursivelyVisit:multiFileVisitor];
+                        if (dumpEnt) {
+                            NSString *newName = [[[[executablePath lastPathComponent] stringByDeletingPathExtension] stringByAppendingString:@"-Entitlements"] stringByAppendingPathExtension:@"plist"];
+                            NSString *entPath = [outputPath stringByAppendingPathComponent:newName];
+                            NSDictionary *ent = [[classDump.machOFiles firstObject] entitlementsDictionary];
+                            if (ent){
+                                InfoLog(@"writing entitlements to path: %@", entPath);
+                                [ent writeToFile:entPath atomically:true];
+                            }
+                        }
                     } else {
+                        if (suppressAllHeaderOutput){
+                            exit(0);
+                        }
                         CDClassDumpVisitor *visitor = [[CDClassDumpVisitor alloc] init];
                         visitor.classDump = classDump;
                         if ([hiddenSections containsObject:@"structures"]) visitor.shouldShowStructureSection = NO;
                         if ([hiddenSections containsObject:@"protocols"])  visitor.shouldShowProtocolSection  = NO;
                         [classDump recursivelyVisit:visitor];
+                        if (dumpEnt) {
+                            NSString *ent = [[classDump.machOFiles firstObject] entitlements];
+                            DLog(@"%@", ent);
+                        }
                     }
                 }
             }

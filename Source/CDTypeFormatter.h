@@ -7,7 +7,7 @@
 
 @interface CDTypeFormatter : NSObject
 
-@property (weak) CDTypeController *typeController;
+@property CDTypeController *typeController;
 
 @property (assign) NSUInteger baseLevel;
 @property (assign) BOOL shouldExpand;

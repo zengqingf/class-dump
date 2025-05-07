@@ -21,7 +21,10 @@
 {
     if ((self = [super init])) {
         _segment = segment;
-        
+        if (cursor.remaining <= 16) {
+            NSLog(@"cursor remaining: %lu is bad, gonna crash. investigate later.", cursor.remaining);
+            //return nil;
+        }
         _sectionName = [cursor readStringOfLength:16 encoding:NSASCIIStringEncoding];
         size_t sectionNameLength = [_sectionName lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
         memcpy(_section.sectname, [_sectionName UTF8String], MIN(sectionNameLength, sizeof(_section.sectname)));
@@ -78,7 +81,9 @@
 - (NSUInteger)fileOffsetForAddress:(NSUInteger)address;
 {
     NSParameterAssert([self containsAddress:address]);
-    return _section.offset + address - _section.addr;
+    NSUInteger offset = _section.offset + address - _section.addr;
+    VerboseLog(@"%s %lu + %lu - %lu = %lu (%016llx)", _cmds, _section.offset, address, _section.addr, offset, offset);
+    return offset;
 }
 
 #pragma mark - Debugging

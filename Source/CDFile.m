@@ -74,13 +74,15 @@ CDArch CDArchFromName(NSString *name)
             arch.cpusubtype = CPU_SUBTYPE_ARM_ALL;
         } else {
             NSString *ignore;
-            
+            if (!name) {
+                VerboseLog(@"%s NSScanner initWithString: %@", _cmds, name);
+            }
             NSScanner *scanner = [[NSScanner alloc] initWithString:name];
             if ([scanner scanHexInt:(uint32_t *)&arch.cputype]
                 && [scanner scanString:@":" intoString:&ignore]
                 && [scanner scanHexInt:(uint32_t *)&arch.cpusubtype]) {
                 // Great!
-                //NSLog(@"scanned 0x%08x : 0x%08x from '%@'", arch.cputype, arch.cpusubtype, name);
+                //DLog(@"scanned 0x%08x : 0x%08x from '%@'", arch.cputype, arch.cpusubtype, name);
             } else {
                 arch.cputype    = CPU_TYPE_ANY;
                 arch.cpusubtype = 0;
@@ -121,7 +123,10 @@ BOOL CDArchUses64BitLibraries(CDArch arch)
 // Returns CDFatFile or CDMachOFile
 + (id)fileWithContentsOfFile:(NSString *)filename searchPathState:(CDSearchPathState *)searchPathState;
 {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated"
     NSData *data = [NSData dataWithContentsOfMappedFile:filename];
+#pragma clang diagnostic pop
     CDFatFile *fatFile = [[CDFatFile alloc] initWithData:data filename:filename searchPathState:searchPathState];
     if (fatFile != nil)
         return fatFile;
