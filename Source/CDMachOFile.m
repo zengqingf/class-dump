@@ -785,7 +785,7 @@ static NSString *CDMachOFileMagicNumberDescription(uint32_t magic) {
     CDLCSegment *segment = [self segmentWithName:@"__TEXT"];
     //InfoLog(@"Text Segment: %@", segment);
     if (segment.vmaddr > self.data.length) {
-        DLog(@"preferredLoadAddress > vmaddr!!!");
+//        DLog(@"preferredLoadAddress > vmaddr!!!");
         //return 0;
     }
     return segment.vmaddr;
